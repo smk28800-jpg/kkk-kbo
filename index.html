@@ -1,292 +1,388 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<title>KKK KBO 시뮬레이터</title>
-<style>
-:root{--brand:#ff5400;}
-body{font-family:Arial,sans-serif;background:#f0f0f0;text-align:center;padding:20px;}
-.container{width:600px;margin:auto;background:#fff;padding:20px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.08);margin-bottom:20px;}
-h2{color:var(--brand);margin-bottom:10px;border-bottom:2px solid var(--brand);padding-bottom:5px;}
-button{background:var(--brand);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;margin-top:10px;font-weight:700;}
-button:hover{background:#e05500;}
-table{margin:0 auto;}
-td{padding:6px 10px;}
-input[type="text"]{padding:8px 10px;margin:6px;border-radius:8px;border:1px solid #ccc;width:250px;}
-#seat-chart{display:grid;grid-template-columns:repeat(10,40px);gap:6px;margin-top:10px;}
-.seat{width:40px;height:40px;background:#b0e57c;line-height:40px;border:1px solid #999;border-radius:8px;cursor:pointer;font-size:12px;user-select:none;}
-.seat.selected{background:#f5a623;color:#111;font-weight:700;}
-#selected-seats-display{margin-top:10px;font-weight:bold;}
-#game-stage{position:relative;width:600px;height:320px;margin:16px auto 10px;border-radius:12px;overflow:hidden;border:1px solid #ddd;}
-#hr-bg{position:absolute;inset:0;background-color:#f0f0f0;}
-#hr-overlay{position:absolute;inset:0;background: radial-gradient(ellipse at 50% 60%, rgba(0,0,0,0) 20%, rgba(0,0,0,0.15) 70%);}
-#ball{position:absolute;width:26px;height:26px;border-radius:50%;background:#fff;border:2px solid #222;box-shadow:0 2px 6px rgba(0,0,0,0.35);transform: translate(-50%, -50%);pointer-events:none;}
-#bat{position:absolute;bottom:45px;right:65px;transform-origin:10% 90%;}
-.swing{animation: swing 180ms ease-out forwards;}
-@keyframes swing{0%{transform:rotate(0deg);}100%{transform:rotate(-55deg);}}
-#contact-line{position:absolute;width:2px;height:100%;right:120px;top:0;pointer-events:none;}
-</style>
+  <meta charset="UTF-8">
+  <title>KKK KBO 시뮬레이터</title>
+  <style>
+    :root { --brand:#ff5400; }
+    body{font-family:Arial,sans-serif;background:#f0f0f0;text-align:center;padding:20px;}
+    .container{width:600px;margin:auto;background:#fff;padding:20px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.08);margin-bottom:20px;}
+    h2{color:var(--brand);margin-bottom:10px;border-bottom:2px solid var(--brand);padding-bottom:5px;}
+    button{background:var(--brand);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;margin-top:10px;font-weight:700;}
+    button:hover{background:#e05500;}
+    table{margin:0 auto;}
+    td{padding:6px 10px;}
+    input[type="text"]{padding:8px 10px;margin:6px;border-radius:8px;border:1px solid #ccc;width:250px;}
+
+    /* 좌석 */
+    #seat-chart{display:grid;grid-template-columns:repeat(10,40px);gap:6px;margin-top:10px;}
+    .seat{width:40px;height:40px;background:#b0e57c;line-height:40px;border:1px solid #999;border-radius:8px;cursor:pointer;font-size:12px;user-select:none;}
+    .seat.selected{background:#f5a623;color:#111;font-weight:700;}
+    #selected-seats-display{margin-top:10px;font-weight:bold;}
+
+    /* 홈런 게임 */
+    #game-stage{position:relative;width:600px;height:320px;margin:16px auto 10px;border-radius:12px;overflow:hidden;border:1px solid #ddd;}
+    #hr-bg{position:absolute;inset:0;background-color:#f0f0f0;}
+    #hr-overlay{position:absolute;inset:0;background: radial-gradient(ellipse at 50% 60%, rgba(0,0,0,0) 20%, rgba(0,0,0,0.15) 70%);}
+    #ball{position:absolute;width:26px;height:26px;border-radius:50%;background:#fff;border:2px solid #222;box-shadow:0 2px 6px rgba(0,0,0,0.35);transform: translate(-50%, -50%);pointer-events:none;}
+    #bat{position:absolute;bottom:45px;right:65px;transform-origin:10% 90%;transform: rotate(0deg);}
+    .swing{animation: swing 180ms ease-out;}
+    @keyframes swing{0%{transform:rotate(0deg);}100%{transform:rotate(-55deg);}}
+    #contact-line{position:absolute;width:2px;height:100%;right:120px;top:0;pointer-events:none;}
+  </style>
 </head>
 <body>
-
-<div class="container" id="game-screen">
-  <h2>경기 선택</h2>
-  <table>
-    <tr><td>9월 1일</td><td><label><input type="radio" name="game" value="LG vs 두산"> LG vs 두산</label></td></tr>
-    <tr><td>9월 2일</td><td><label><input type="radio" name="game" value="SSG vs 롯데"> SSG vs 롯데</label></td></tr>
-    <tr><td>9월 3일</td><td><label><input type="radio" name="game" value="기아 vs KT"> 기아 vs KT</label></td></tr>
-    <tr><td>9월 4일</td><td><label><input type="radio" name="game" value="NC vs 삼성"> NC vs 삼성</label></td></tr>
-  </table>
-  <p>
-    <label><input type="checkbox" id="medium-mode"> 중위험 모드 (CAPTCHA)</label>
-    <label><input type="checkbox" id="high-mode"> 고위험 모드 (본인인증)</label>
-  </p>
-  <button id="to-seat">다음</button>
-</div>
-
-<div class="container" id="seat-screen" style="display:none">
-  <h2>좌석 선택</h2>
-  <p>선택한 경기: <span id="selected-game-display"></span></p>
-  <div id="seat-chart"></div>
-  <div id="selected-seats-display">선택된 좌석: 없음</div>
-  <button id="to-auth">다음</button>
-</div>
-
-<div class="container" id="home-run-screen" style="display:none">
-  <div id="game-stage" aria-label="홈런 게임 영역">
-    <div id="hr-bg"></div>
-    <div id="hr-overlay"></div>
-    <div id="contact-line"></div>
-    <div id="ball"></div>
-    <svg id="bat" width="110" height="20">
-      <rect x="0" y="0" width="110" height="20" rx="4" ry="4" fill="#8B4513"/>
-    </svg>
+  <!-- 경기 선택 -->
+  <div class="container" id="game-screen">
+    <h2>경기 선택</h2>
+    <table>
+      <tr><td>9월 1일</td><td><label><input type="radio" name="game" value="LG vs 두산"> LG vs 두산</label></td></tr>
+      <tr><td>9월 2일</td><td><label><input type="radio" name="game" value="SSG vs 롯데"> SSG vs 롯데</label></td></tr>
+      <tr><td>9월 3일</td><td><label><input type="radio" name="game" value="기아 vs KT"> 기아 vs KT</label></td></tr>
+      <tr><td>9월 4일</td><td><label><input type="radio" name="game" value="NC vs 삼성"> NC vs 삼성</label></td></tr>
+    </table>
+    <p>
+      <label><input type="checkbox" id="medium-mode"> 중위험 모드 (CAPTCHA)</label>
+      <label><input type="checkbox" id="high-mode"> 고위험 모드 (본인인증)</label>
+    </p>
+    <button id="to-seat">다음</button>
   </div>
-  <div id="game-msg" style="margin-top:10px; font-weight:bold;"></div>
-  <div id="result" style="margin-top:8px; height:28px; font-weight:800;"></div>
-  <button id="start-btn">게임 시작</button>
-  <button id="retry-btn" style="display:none">다시 시도</button>
-</div>
 
-<div class="container" id="captcha-screen" style="display:none">
-  <h2>CAPTCHA 인증</h2>
-  <div id="captchaContainer">
-    <canvas id="captchaCanvas" width="180" height="60" style="border:1px solid #ccc;"></canvas><br>
-    <input type="text" id="captchaInput" placeholder="CAPTCHA 입력">
-    <button id="captchaBtn">확인</button>
+  <!-- 좌석 선택 -->
+  <div class="container" id="seat-screen" style="display:none">
+    <h2>좌석 선택</h2>
+    <p>선택한 경기: <span id="selected-game-display"></span></p>
+    <div id="seat-chart"></div>
+    <div id="selected-seats-display">선택된 좌석: 없음</div>
+    <button id="to-auth">다음</button>
   </div>
-</div>
 
-<div class="container" id="auth-screen" style="display:none">
-  <h2>본인 인증 (시뮬레이션)</h2>
-  <div id="authContainer">
-    <input type="text" id="nameInput" placeholder="이름"><br>
-    <input type="text" id="phoneInput" placeholder="휴대폰 번호"><br>
-    <button id="sendCodeBtn">인증번호 전송</button><br>
-    <div id="simCodeContainer" style="display:none; margin-top:6px;">
-      <input type="text" id="authCodeInput" placeholder="인증번호 입력"><br>
-      <span id="simCodeDisplay" style="color:gray; font-size:12px;"></span><br>
-      <button id="authBtn">인증</button>
+  <!-- 홈런 게임 -->
+  <div class="container" id="home-run-screen" style="display:none">
+    <div id="game-stage" aria-label="홈런 게임 영역">
+      <div id="hr-bg"></div>
+      <div id="hr-overlay"></div>
+      <div id="contact-line"></div>
+      <div id="ball"></div>
+      <svg id="bat" width="110" height="20">
+        <rect x="0" y="0" width="110" height="20" rx="4" ry="4" fill="#8B4513"/>
+      </svg>
+    </div>
+    <div id="game-msg" style="margin-top:10px; font-weight:bold;"></div>
+    <div id="result" style="margin-top:8px; height:28px; font-weight:800;"></div>
+    <button id="start-btn">게임 시작</button>
+    <button id="retry-btn" style="display:none">다시 시도</button>
+  </div>
+
+  <!-- CAPTCHA -->
+  <div class="container" id="captcha-screen" style="display:none">
+    <h2>CAPTCHA 인증</h2>
+    <div id="captchaContainer">
+      <canvas id="captchaCanvas" width="180" height="60" style="border:1px solid #ccc;"></canvas><br>
+      <input type="text" id="captchaInput" placeholder="CAPTCHA 입력">
+      <button id="captchaBtn">확인</button>
     </div>
   </div>
-</div>
 
-<div class="container" id="summary-screen" style="display:none">
-  <h2>예매 완료</h2>
-  <p>선택한 경기: <span id="summary-game"></span></p>
-  <p>선택된 좌석: <span id="summary-seats"></span></p>
-  <button id="restart">처음으로</button>
-</div>
+  <!-- 본인 인증 -->
+  <div class="container" id="auth-screen" style="display:none">
+    <h2>본인 인증 (시뮬레이션)</h2>
+    <div id="authContainer">
+      <input type="text" id="nameInput" placeholder="이름"><br>
+      <input type="text" id="phoneInput" placeholder="휴대폰 번호"><br>
+      <button id="sendCodeBtn">인증번호 전송</button><br>
+      <div id="simCodeContainer" style="display:none; margin-top:6px;">
+        <input type="text" id="authCodeInput" placeholder="인증번호 입력"><br>
+        <span id="simCodeDisplay" style="color:gray; font-size:12px;"></span><br>
+        <button id="authBtn">인증</button>
+      </div>
+    </div>
+  </div>
 
-<script>
-window.addEventListener('DOMContentLoaded', () => {
-  let selectedGame="", selectedSeats=[], clickCount=0;
+  <!-- 요약 -->
+  <div class="container" id="summary-screen" style="display:none">
+    <h2>예매 완료</h2>
+    <p>선택한 경기: <span id="summary-game"></span></p>
+    <p>선택된 좌석: <span id="summary-seats"></span></p>
+    <button id="restart">처음으로</button>
+  </div>
 
-  function showScreen(id){
-    ['game-screen','seat-screen','home-run-screen','captcha-screen','auth-screen','summary-screen']
-      .forEach(s=>document.getElementById(s).style.display=(s===id?'block':'none'));
-  }
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      let selectedGame = "";
+      let selectedSeats = [];
 
-  // 체크박스 단일 선택
-  const medium = document.getElementById('medium-mode');
-  const high = document.getElementById('high-mode');
-  medium.addEventListener('change', () => { if(medium.checked) high.checked = false; });
-  high.addEventListener('change', () => { if(high.checked) medium.checked = false; });
+      function showScreen(id){
+        ['game-screen','seat-screen','home-run-screen','captcha-screen','auth-screen','summary-screen']
+          .forEach(s => document.getElementById(s).style.display = (s===id?'block':'none'));
+      }
 
-  // 좌석 생성
-  const seatChart=document.getElementById('seat-chart');
-  ['A','B','C','D','E'].forEach(row=>{
-    for(let i=1;i<=10;i++){
-      const seat=document.createElement('div');
-      seat.className='seat';
-      seat.textContent=row+i;
-      seat.dataset.seat=row+i;
-      seat.addEventListener('click', function(){
-        const idx=selectedSeats.indexOf(this.dataset.seat);
-        if(idx===-1){ selectedSeats.push(this.dataset.seat); this.classList.add('selected'); }
-        else{ selectedSeats.splice(idx,1); this.classList.remove('selected'); }
-        document.getElementById('selected-seats-display').textContent = selectedSeats.length>0 ? "선택된 좌석: "+selectedSeats.join(', ') : "선택된 좌석: 없음";
+      // 체크박스 단일 선택
+      const medium = document.getElementById('medium-mode');
+      const high = document.getElementById('high-mode');
+      medium.addEventListener('change', () => { if (medium.checked) high.checked = false; });
+      high.addEventListener('change', () => { if (high.checked) medium.checked = false; });
+
+      // 좌석 생성 함수 (항상 새로 그림 → 색상 초기화 보장)
+      const seatChart = document.getElementById('seat-chart');
+      function createSeats() {
+        seatChart.innerHTML = '';
+        ['A','B','C','D','E'].forEach(row=>{
+          for(let i=1;i<=10;i++){
+            const seat = document.createElement('div');
+            seat.className = 'seat';
+            seat.textContent = row+i;
+            seat.dataset.seat = row+i;
+            seat.addEventListener('click', function(){
+              const idx = selectedSeats.indexOf(this.dataset.seat);
+              if(idx===-1){
+                selectedSeats.push(this.dataset.seat);
+                this.classList.add('selected');
+              } else {
+                selectedSeats.splice(idx,1);
+                this.classList.remove('selected');
+              }
+              document.getElementById('selected-seats-display').textContent =
+                selectedSeats.length>0 ? '선택된 좌석: ' + selectedSeats.join(', ') : '선택된 좌석: 없음';
+            });
+            seatChart.appendChild(seat);
+          }
+        });
+        // 텍스트도 초기화
+        document.getElementById('selected-seats-display').textContent = '선택된 좌석: 없음';
+      }
+      createSeats();
+
+      // 경기 선택 -> 좌석
+      document.getElementById('to-seat').addEventListener('click',()=>{
+        const gameRadio = document.querySelector('input[name="game"]:checked');
+        if(!gameRadio){ alert("경기를 선택해주세요."); return; }
+        selectedGame = gameRadio.value;
+        document.getElementById('selected-game-display').textContent = selectedGame;
+        selectedSeats = [];
+        createSeats(); // 좌석 색상 및 선택 상태 완전 초기화
+        showScreen('seat-screen');
       });
-      seatChart.appendChild(seat);
-    }
-  });
 
-  // 경기 선택 -> 좌석
-  document.getElementById('to-seat').addEventListener('click',()=>{
-    const gameRadio=document.querySelector('input[name="game"]:checked');
-    if(!gameRadio){ alert("경기를 선택해주세요."); return; }
-    selectedGame=gameRadio.value;
-    document.getElementById('selected-game-display').textContent=selectedGame;
-    selectedSeats=[]; clickCount=0;
-    showScreen('seat-screen');
-  });
+      // 좌석 -> 인증/게임
+      document.getElementById('to-auth').addEventListener('click',()=>{
+        if(selectedSeats.length===0){ alert("최소 한 개 좌석 선택."); return; }
+        if(high.checked){
+          showScreen('auth-screen');
+        } else if(medium.checked){
+          showCaptcha();
+        } else{
+          prepareHomeRunGame();
+          showScreen('home-run-screen');
+        }
+      });
 
-  // 좌석 선택 -> 인증/게임
-  document.getElementById('to-auth').addEventListener('click',()=>{
-    if(selectedSeats.length===0){ alert("최소 한 개 좌석 선택."); return; }
-    if(high.checked){ showScreen('auth-screen'); }
-    else if(medium.checked){ showCaptcha(); }
-    else{ prepareHomeRunGame(); showScreen('home-run-screen'); }
-  });
+      // 홈런 게임 변수/요소
+      const stage = document.getElementById('game-stage');
+      const ball = document.getElementById('ball');
+      const bat = document.getElementById('bat');
+      const result = document.getElementById('result');
+      const startBtn = document.getElementById('start-btn');
+      const retryBtn = document.getElementById('retry-btn');
+      const gameMsg = document.getElementById('game-msg');
 
-  // 홈런 게임
-  const stage = document.getElementById('game-stage');
-  const ball = document.getElementById('ball');
-  const bat = document.getElementById('bat');
-  const result = document.getElementById('result');
-  const startBtn = document.getElementById('start-btn');
-  const retryBtn = document.getElementById('retry-btn');
-  const gameMsg = document.getElementById('game-msg');
+      const totalTime = 3000; // 공 이동 시간(ms)
+      const minWin = 150;     // 반응 최소(ms)
+      const maxWin = 650;     // 반응 최대(ms)
 
-  const totalTime = 3000;
-  const minWin = 150;
-  const maxWin = 650;
-  let startTime, animId, zoneStartAt=null, gameOver=false, started=false;
+      let startTime, animId, zoneStartAt=null, gameOver=false, started=false;
 
-  function prepareHomeRunGame(){
-    cancelAnimationFrame(animId);
-    ball.style.left = '120px'; ball.style.top = '70px'; ball.style.display = 'block';
-    bat.style.transform = 'rotate(0deg)'; result.textContent = ''; gameMsg.textContent = '곧 투구 시작!';
-    startBtn.style.display='inline-block'; retryBtn.style.display='none'; zoneStartAt=null; gameOver=false; started=false;
-  }
+      function prepareHomeRunGame(){
+        cancelAnimationFrame(animId);
+        startTime = null; zoneStartAt=null; gameOver=false; started=false;
+        // 공 초기 위치
+        ball.style.left = '120px';
+        ball.style.top  = '70px';
+        ball.style.display = 'block';
+        // 배트 초기화 (원위치)
+        bat.classList.remove('swing');
+        bat.style.transform = 'rotate(0deg)';
+        // UI
+        result.textContent = '';
+        gameMsg.textContent = '곧 투구 시작!';
+        startBtn.style.display='inline-block';
+        retryBtn.style.display='none';
+      }
 
-  function swingBat(){ bat.classList.remove('swing'); void bat.offsetWidth; bat.classList.add('swing'); }
-  function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+      function swingBat(){
+        // 배트는 "클릭할 때만" 휘둘림
+        bat.classList.remove('swing');
+        void bat.offsetWidth; // reflow로 애니메이션 재적용
+        bat.classList.add('swing');
+        // 헛스윙/타격 후 반드시 원위치
+        setTimeout(() => {
+          bat.classList.remove('swing');
+          bat.style.transform = 'rotate(0deg)';
+        }, 220);
+      }
 
-  function animate(ts){
-    if(!startTime) startTime = ts;
-    const elapsed = ts - startTime;
-    const t = Math.min(elapsed / totalTime, 1);
-    const e = easeOutCubic(t);
-    const x0=120,x1=480,y0=70,y1=230,midLift=-40;
-    const x=x0+(x1-x0)*e;
-    const y=y0+(y1-y0)*e+(1-(2*Math.abs(0.5-e)))*midLift;
-    ball.style.left = x+'px'; ball.style.top = y+'px';
-    if(zoneStartAt===null && x >= 360) zoneStartAt = performance.now();
-    if(elapsed<totalTime && !gameOver) animId=requestAnimationFrame(animate);
-    else if(!gameOver){ result.textContent='헛스윙! 늦었습니다. 다시 시도하세요 ⚾'; gameOver=true; startBtn.style.display='none'; retryBtn.style.display='inline-block'; prepareHomeRunGame(); }
-  }
+      function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
 
-  stage.addEventListener('click', ()=>{
-    if(!started || gameOver) return;
-    swingBat();
-    if(zoneStartAt===null) return;
-    const reaction = performance.now() - zoneStartAt;
-    if(reaction>=minWin && reaction<=maxWin){
-      result.textContent='성공! 인증 완료 🎉'; gameOver=true; cancelAnimationFrame(animId); setTimeout(()=>displaySummary(),500);
-    }else{
-      result.textContent=(reaction<minWin)?'헛스윙! 너무 빨랐어요 🥲':'헛스윙! 너무 늦었어요 🥲';
-      gameOver=true; cancelAnimationFrame(animId); startBtn.style.display='none'; retryBtn.style.display='inline-block'; prepareHomeRunGame();
-    }
-  });
+      function animate(ts){
+        if(!startTime) startTime = ts;
+        const elapsed = ts - startTime;
+        const t = Math.min(elapsed / totalTime, 1);
+        const e = easeOutCubic(t);
 
-  startBtn.addEventListener('click', ()=>{
-    if(started) return; started=true; gameOver=false; result.textContent=''; gameMsg.textContent='';
-    startBtn.style.display='none'; retryBtn.style.display='none'; startTime=null; zoneStartAt=null;
-    gameMsg.textContent = "잠시 후 투구가 시작됩니다...";
-    setTimeout(()=> animId=requestAnimationFrame(animate), 900);
-  });
+        // 포물선 비슷한 궤적
+        const x0=120,x1=480,y0=70,y1=230,midLift=-40;
+        const x=x0+(x1-x0)*e;
+        const y=y0+(y1-y0)*e+(1-(2*Math.abs(0.5-e)))*midLift;
 
-  retryBtn.addEventListener('click', prepareHomeRunGame);
+        ball.style.left = x+'px';
+        ball.style.top  = y+'px';
 
-  // CAPTCHA (Canvas 왜곡)
-  function showCaptcha() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
-    let code = '';
-    for (let i = 0; i < 7; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    window.captchaValue = code;
+        // 타격 존 도달 시각 기록(한 번만)
+        if(zoneStartAt===null && x >= 360) zoneStartAt = performance.now();
 
-    const canvas = document.getElementById('captchaCanvas');
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#f2f2f2';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if(elapsed < totalTime && !gameOver){
+          animId=requestAnimationFrame(animate);
+        } else if(!gameOver){
+          // 시간 초과(스윙 타이밍 놓침) → 헛스윙 판정, 배트는 자동 안 움직임
+          result.textContent='헛스윙! 늦었습니다. 다시 시도하세요 ⚾';
+          gameOver=true;
+          startBtn.style.display='none';
+          retryBtn.style.display='inline-block';
+        }
+      }
 
-    for (let i = 0; i < code.length; i++) {
-      const fontSize = Math.floor(Math.random() * 10) + 26;
-      const angle = (Math.random() * 40 - 20) * Math.PI / 180;
-      ctx.font = `${fontSize}px Arial Black`;
-      ctx.fillStyle = `hsl(${Math.floor(Math.random() * 360)}, 80%, 35%)`;
-      ctx.save();
-      ctx.translate(20 + i * 22, 40);
-      ctx.rotate(angle);
-      ctx.fillText(code[i], 0, 0);
-      ctx.restore();
-    }
-    for (let i = 0; i < 8; i++) {
-      ctx.strokeStyle = `rgba(0,0,0,${Math.random() * 0.3})`;
-      ctx.beginPath();
-      ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
-      ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
-      ctx.stroke();
-    }
-    for (let i = 0; i < 80; i++) {
-      ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.2})`;
-      ctx.beginPath();
-      ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 1, 0, 2 * Math.PI);
-      ctx.fill();
-    }
+      // 스테이지 클릭 = 스윙 (게임 중일 때만)
+      stage.addEventListener('click', ()=>{
+        if(!started || gameOver) return;
+        swingBat();
+        if(zoneStartAt===null) return; // 아직 타격 존 전
 
-    document.getElementById('captchaInput').value = '';
-    showScreen('captcha-screen');
-  }
+        const reaction = performance.now() - zoneStartAt;
+        if(reaction>=minWin && reaction<=maxWin){
+          result.textContent='성공! 인증 완료 🎉';
+          gameOver=true;
+          cancelAnimationFrame(animId);
+          setTimeout(()=>displaySummary(),500);
+        }else{
+          result.textContent=(reaction<minWin)?'헛스윙! 너무 빨랐어요 🥲':'헛스윙! 너무 늦었어요 🥲';
+          gameOver=true;
+          cancelAnimationFrame(animId);
+          startBtn.style.display='none';
+          retryBtn.style.display='inline-block';
+        }
+      });
 
-  document.getElementById('captchaBtn').addEventListener('click',()=>{
-    if(document.getElementById('captchaInput').value===window.captchaValue) displaySummary();
-    else { alert('CAPTCHA가 틀렸습니다. 다시 입력해주세요.'); showCaptcha(); }
-  });
+      // 게임 시작은 "공만" 던짐 (배트 자동 X)
+      startBtn.addEventListener('click', ()=>{
+        if(started) return;
+        started=true; gameOver=false;
+        result.textContent=''; gameMsg.textContent='';
+        startBtn.style.display='none'; retryBtn.style.display='none';
+        startTime=null; zoneStartAt=null;
+        gameMsg.textContent = "잠시 후 투구가 시작됩니다...";
+        setTimeout(()=> animId=requestAnimationFrame(animate), 900);
+      });
 
-  // 시뮬레이션 본인인증
-  document.getElementById('sendCodeBtn').addEventListener('click', ()=>{
-    let name = document.getElementById('nameInput').value.trim();
-    let phone = document.getElementById('phoneInput').value.trim();
-    if(!name || !phone){ alert('이름과 휴대폰 번호를 입력해주세요.'); return; }
-    const code = Math.floor(100000 + Math.random()*900000).toString();
-    window.simAuthCode = code;
-    document.getElementById('simCodeContainer').style.display = 'block';
-    document.getElementById('simCodeDisplay').textContent = '임시 인증번호: ' + code;
-  });
+      retryBtn.addEventListener('click', prepareHomeRunGame);
 
-  document.getElementById('authBtn').addEventListener('click', ()=>{
-    const inputCode = document.getElementById('authCodeInput').value.trim();
-    if(inputCode === window.simAuthCode) {
-      showCaptcha(); // 본인인증 후 CAPTCHA 실행
-    } else {
-      alert('인증번호가 틀렸습니다.');
-    }
-  });
+      // CAPTCHA (Canvas 왜곡) — 문자열 보간/색상 오타 수정
+      function showCaptcha() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+        let code = '';
+        for (let i = 0; i < 7; i++) { code += chars.charAt(Math.floor(Math.random() * chars.length)); }
+        window.captchaValue = code;
 
-  function displaySummary(){
-    document.getElementById('summary-game').textContent = selectedGame;
-    document.getElementById('summary-seats').textContent = selectedSeats.join(', ');
-    showScreen('summary-screen');
-  }
+        const canvas = document.getElementById('captchaCanvas');
+        const ctx = canvas.getContext('2d');
 
-  document.getElementById('restart').addEventListener('click',()=>{ showScreen('game-screen'); });
-});
-</script>
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#f2f2f2';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        for (let i = 0; i < code.length; i++) {
+          const fontSize = Math.floor(Math.random() * 10) + 26;
+          const angle = (Math.random() * 40 - 20) * Math.PI / 180;
+          ctx.font = `${fontSize}px Arial Black`;
+          ctx.fillStyle = `hsl(${Math.floor(Math.random() * 360)}, 80%, 35%)`;
+          ctx.save();
+          ctx.translate(20 + i * 22, 40);
+          ctx.rotate(angle);
+          ctx.fillText(code[i], 0, 0);
+          ctx.restore();
+        }
+
+        for (let i = 0; i < 8; i++) {
+          ctx.strokeStyle = `rgba(0,0,0,${Math.random() * 0.3})`;
+          ctx.beginPath();
+          ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+          ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+          ctx.stroke();
+        }
+
+        for (let i = 0; i < 80; i++) {
+          ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.2})`;
+          ctx.beginPath();
+          ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 1, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+
+        document.getElementById('captchaInput').value = '';
+        showScreen('captcha-screen');
+      }
+
+      document.getElementById('captchaBtn').addEventListener('click',()=>{
+        if(document.getElementById('captchaInput').value===window.captchaValue) displaySummary();
+        else { alert('CAPTCHA가 틀렸습니다. 다시 입력해주세요.'); showCaptcha(); }
+      });
+
+      // 시뮬레이션 본인인증
+      document.getElementById('sendCodeBtn').addEventListener('click', ()=>{
+        let name = document.getElementById('nameInput').value.trim();
+        let phone = document.getElementById('phoneInput').value.trim();
+        if(!name || !phone){ alert('이름과 휴대폰 번호를 입력해주세요.'); return; }
+        const code = Math.floor(100000 + Math.random()*900000).toString();
+        window.simAuthCode = code;
+        document.getElementById('simCodeContainer').style.display = 'block';
+        document.getElementById('simCodeDisplay').textContent = '임시 인증번호: ' + code;
+      });
+
+      document.getElementById('authBtn').addEventListener('click', ()=>{
+        const inputCode = document.getElementById('authCodeInput').value.trim();
+        if(inputCode === window.simAuthCode) {
+          showCaptcha(); // 본인인증 후 CAPTCHA 실행
+        } else {
+          alert('인증번호가 틀렸습니다.');
+        }
+      });
+
+      function displaySummary(){
+        document.getElementById('summary-game').textContent = selectedGame;
+        document.getElementById('summary-seats').textContent = selectedSeats.join(', ');
+        showScreen('summary-screen');
+      }
+
+      // 처음으로: 모든 상태/색상 완전 초기화
+      document.getElementById('restart').addEventListener('click',()=>{
+        // 상태 리셋
+        selectedGame = '';
+        selectedSeats = [];
+
+        // 라디오/체크박스/입력 초기화
+        document.querySelectorAll('input[name="game"]').forEach(r => r.checked = false);
+        medium.checked = false; high.checked = false;
+        document.getElementById('captchaInput').value = '';
+        document.getElementById('nameInput').value = '';
+        document.getElementById('phoneInput').value = '';
+        document.getElementById('authCodeInput').value = '';
+        document.getElementById('simCodeContainer').style.display = 'none';
+
+        // 좌석/게임 화면 초기화
+        createSeats();
+        prepareHomeRunGame();
+
+        showScreen('game-screen');
+      });
+    });
+  </script>
 </body>
 </html>
